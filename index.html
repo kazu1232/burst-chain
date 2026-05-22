@@ -6,156 +6,185 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#050510">
-<title>BURST CHAIN - バーストチェイン</title>
+<title>BURST CHAIN - 連鎖の頂へ</title>
 <style>
   * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
   html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-    touch-action: none;
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; overscroll-behavior: none; touch-action: none;
   }
   body {
     background: radial-gradient(ellipse at top, #1a1a3a, #050510);
     color: white;
     font-family: 'Segoe UI', 'Hiragino Sans', 'Yu Gothic', sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: flex; flex-direction: column; align-items: center;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    transition: background 1s;
   }
-  #header {
-    width: 100%;
-    text-align: center;
-    padding: 8px 10px 4px;
-    flex-shrink: 0;
+  body.danger { animation: danger-flash 0.6s ease-in-out infinite; }
+  @keyframes danger-flash {
+    0%, 100% { background: radial-gradient(ellipse at top, #1a1a3a, #050510); }
+    50% { background: radial-gradient(ellipse at top, #3a1a1a, #200505); }
   }
+
+  #header { width: 100%; text-align: center; padding: 6px 10px 2px; flex-shrink: 0; }
   h1 {
     margin: 0;
     background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    font-size: clamp(1.4em, 5vw, 2.2em);
-    letter-spacing: 4px;
-    font-weight: 900;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-size: clamp(1.2em, 4.5vw, 1.9em);
+    letter-spacing: 4px; font-weight: 900;
     filter: drop-shadow(0 0 20px rgba(100,150,255,0.3));
   }
   #stats {
-    display: flex;
-    gap: 6px;
-    margin: 6px auto;
-    font-size: clamp(0.7em, 2.5vw, 0.95em);
-    justify-content: center;
-    flex-wrap: nowrap;
-    width: 100%;
-    max-width: 600px;
-    padding: 0 8px;
+    display: flex; gap: 5px; margin: 5px auto;
+    font-size: clamp(0.65em, 2.3vw, 0.85em);
+    justify-content: center; flex-wrap: nowrap;
+    width: 100%; max-width: 600px; padding: 0 8px;
   }
   .stat {
-    padding: 5px 10px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
+    padding: 4px 8px; background: rgba(255,255,255,0.08);
+    border-radius: 14px; backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.1);
-    flex: 1;
-    text-align: center;
-    white-space: nowrap;
-    min-width: 0;
+    flex: 1; text-align: center; white-space: nowrap; min-width: 0;
   }
-  .stat span { font-weight: bold; color: #feca57; }
+  .stat .label { font-size: 0.85em; color: #999; }
+  .stat .val { font-weight: bold; color: #feca57; font-size: 1.1em; }
+  .stat.lv .val { color: #1dd1a1; }
+  .stat.mult .val { color: #ff9ff3; }
+
   #canvas-wrap {
-    position: relative;
-    flex: 1;
-    width: 100%;
-    max-width: 600px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px;
-    min-height: 0;
+    position: relative; flex: 1; width: 100%; max-width: 600px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px; min-height: 0;
   }
   #canvas {
-    display: block;
-    border-radius: 14px;
+    display: block; border-radius: 14px;
     box-shadow: 0 0 40px rgba(100,100,255,0.25), inset 0 0 30px rgba(0,0,0,0.3);
     background: radial-gradient(circle at center, #1a1a3a, #050510);
-    cursor: crosshair;
-    touch-action: none;
-    max-width: 100%;
-    max-height: 100%;
+    cursor: crosshair; touch-action: none;
+    max-width: 100%; max-height: 100%;
+    transition: box-shadow 0.3s;
   }
+  #canvas.danger { box-shadow: 0 0 60px rgba(255,80,80,0.6), inset 0 0 30px rgba(80,0,0,0.5); }
+
+  #xp-bar-wrap {
+    position: absolute; top: 4px; left: 4px; right: 4px;
+    height: 5px; background: rgba(255,255,255,0.08);
+    border-radius: 3px; overflow: hidden; pointer-events: none; z-index: 2;
+  }
+  #xp-bar {
+    height: 100%; width: 0;
+    background: linear-gradient(90deg, #feca57, #ff6b6b);
+    border-radius: 3px; box-shadow: 0 0 10px rgba(255,200,80,0.6);
+    transition: width 0.25s;
+  }
+
   #combo-popup {
-    position: absolute;
-    top: 30%;
-    left: 50%;
+    position: absolute; top: 30%; left: 50%;
     transform: translate(-50%, -50%) scale(0);
     pointer-events: none;
-    font-size: clamp(2em, 8vw, 3.5em);
-    font-weight: 900;
+    font-size: clamp(2em, 8vw, 3.5em); font-weight: 900;
     text-shadow: 0 0 30px currentColor;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
-    opacity: 0;
-    white-space: nowrap;
+    opacity: 0; white-space: nowrap;
   }
-  .info {
-    width: 100%;
-    text-align: center;
-    color: #888;
-    font-size: clamp(0.7em, 2.2vw, 0.85em);
-    line-height: 1.5;
-    padding: 6px 10px 10px;
-    flex-shrink: 0;
+
+  .overlay {
+    position: absolute; inset: 4px;
+    background: rgba(5,5,20,0.9); border-radius: 14px;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; backdrop-filter: blur(12px);
+    z-index: 10; padding: 16px;
   }
-  #start-screen {
-    position: absolute;
-    inset: 4px;
-    background: rgba(10,10,30,0.9);
-    border-radius: 14px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    backdrop-filter: blur(10px);
-    z-index: 10;
-    padding: 20px;
-  }
-  #start-screen h2 {
-    font-size: clamp(1.4em, 6vw, 2em);
-    margin: 0;
+  .overlay.show { display: flex; }
+
+  .overlay h2 {
+    font-size: clamp(1.3em, 5vw, 1.9em); margin: 0;
     background: linear-gradient(135deg, #ff6b6b, #feca57);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
     text-align: center;
   }
-  #start-screen p {
-    max-width: 90%;
-    text-align: center;
-    line-height: 1.6;
-    color: #ccc;
-    margin: 0;
-    font-size: clamp(0.85em, 3.2vw, 1em);
-  }
+  .overlay p { max-width: 90%; text-align: center; line-height: 1.5; color: #ccc; margin: 0; font-size: clamp(0.85em, 3vw, 0.95em); }
+
   .btn {
-    padding: 14px 36px;
-    background: linear-gradient(135deg, #ff6b6b, #feca57);
-    border: none;
-    border-radius: 30px;
-    color: white;
-    font-size: clamp(1em, 3.5vw, 1.2em);
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 8px 30px rgba(255,107,107,0.4);
-    transition: transform 0.15s, box-shadow 0.15s;
-    letter-spacing: 2px;
-    touch-action: manipulation;
+    padding: 12px 32px; background: linear-gradient(135deg, #ff6b6b, #feca57);
+    border: none; border-radius: 30px; color: white;
+    font-size: clamp(1em, 3.5vw, 1.15em); font-weight: bold;
+    cursor: pointer; box-shadow: 0 8px 30px rgba(255,107,107,0.4);
+    transition: transform 0.15s; letter-spacing: 2px; touch-action: manipulation;
   }
-  .btn:active { transform: scale(0.95); box-shadow: 0 4px 15px rgba(255,107,107,0.4); }
+  .btn:active { transform: scale(0.95); }
+
+  .meta-stats {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 10px 16px;
+    width: 90%;
+    max-width: 320px;
+    font-size: clamp(0.75em, 2.6vw, 0.85em);
+    color: #aaa;
+  }
+  .meta-stats .row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .meta-stats .row b { color: #feca57; }
+
+  /* LEVEL UP cards */
+  .levelup-title {
+    font-size: clamp(1.4em, 5vw, 1.9em); font-weight: 900;
+    background: linear-gradient(135deg, #feca57, #ff6b6b);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: levelup-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes levelup-pulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(255,200,80,0.4)); }
+    50% { transform: scale(1.05); filter: drop-shadow(0 0 30px rgba(255,200,80,0.8)); }
+  }
+  .upgrade-cards {
+    display: flex; gap: 8px; width: 100%; max-width: 500px;
+    flex-direction: column;
+  }
+  .upgrade-card {
+    padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 12px; cursor: pointer; transition: all 0.2s;
+    text-align: left; color: white; display: flex; gap: 12px; align-items: center;
+  }
+  .upgrade-card:hover { background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05)); }
+  .upgrade-card:active { transform: scale(0.97); }
+  .upgrade-card .icon { font-size: 1.8em; flex-shrink: 0; }
+  .upgrade-card .body { flex: 1; min-width: 0; }
+  .upgrade-card .name { font-weight: bold; font-size: clamp(0.9em, 3vw, 1em); }
+  .upgrade-card .desc { font-size: clamp(0.7em, 2.4vw, 0.8em); color: #bbb; margin-top: 2px; }
+  .upgrade-card .lv {
+    font-size: 0.75em; color: #feca57;
+    background: rgba(254,202,87,0.15);
+    padding: 2px 8px; border-radius: 10px;
+    margin-left: 8px; flex-shrink: 0;
+  }
+  .upgrade-card.new { border-color: rgba(255,200,80,0.5); }
+  .upgrade-card.new .lv { background: rgba(255,200,80,0.3); color: #fff; }
+
+  /* Achievement toast */
+  #achievement {
+    position: absolute; top: 16px; left: 50%;
+    transform: translateX(-50%) translateY(-120px);
+    background: linear-gradient(135deg, #feca57, #ff6b6b);
+    padding: 8px 20px; border-radius: 30px;
+    color: white; font-weight: bold;
+    font-size: clamp(0.75em, 2.6vw, 0.9em);
+    box-shadow: 0 8px 30px rgba(255,107,107,0.5);
+    z-index: 20; opacity: 0;
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none; white-space: nowrap;
+  }
+  #achievement.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .info {
+    width: 100%; text-align: center; color: #666;
+    font-size: clamp(0.65em, 2.1vw, 0.78em); line-height: 1.4;
+    padding: 4px 10px 8px; flex-shrink: 0;
+  }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -163,217 +192,364 @@
   <div id="header">
     <h1>BURST CHAIN</h1>
     <div id="stats">
-      <div class="stat">SCORE<br><span id="score">0</span></div>
-      <div class="stat">MAX CHAIN<br><span id="maxcombo">0</span></div>
-      <div class="stat">TIME<br><span id="time">60</span></div>
+      <div class="stat"><div class="label">SCORE</div><div class="val" id="score">0</div></div>
+      <div class="stat lv"><div class="label">LV</div><div class="val" id="level">1</div></div>
+      <div class="stat mult"><div class="label">×MULT</div><div class="val" id="mult">1.0</div></div>
+      <div class="stat"><div class="label">CHAIN</div><div class="val" id="maxcombo">0</div></div>
     </div>
   </div>
   <div id="canvas-wrap">
     <canvas id="canvas"></canvas>
+    <div id="xp-bar-wrap"><div id="xp-bar"></div></div>
     <div id="combo-popup"></div>
-    <div id="start-screen">
-      <h2>バーストチェイン</h2>
-      <p>同じ色のボールをタップして<br><b style="color:#feca57">連鎖爆発</b>を起こせ！<br><br>長い連鎖ほど高得点。<br>60秒でハイスコアを狙え！</p>
+    <div id="achievement"></div>
+
+    <div class="overlay show" id="start-screen">
+      <h2>連鎖の頂へ</h2>
+      <p>同じ色のボールをタップして<br><b style="color:#feca57">連鎖爆発</b>でレベルアップ。<br>強化を選びながら、限界まで生き残れ。</p>
+      <div class="meta-stats" id="meta-display"></div>
       <button class="btn" id="start-btn">START</button>
     </div>
+
+    <div class="overlay" id="levelup-screen">
+      <div class="levelup-title" id="levelup-title">LEVEL UP!</div>
+      <p style="color:#999;font-size:0.85em">強化を1つ選んでください</p>
+      <div class="upgrade-cards" id="upgrade-cards"></div>
+    </div>
+
+    <div class="overlay" id="gameover-screen">
+      <h2>GAME OVER</h2>
+      <div class="meta-stats" id="result-display"></div>
+      <button class="btn" id="restart-btn">もう一回</button>
+    </div>
   </div>
-  <p class="info">
-    同色ボールに爆発が触れると連鎖します。<br>
-    Tap balls to chain same-color explosions!
-  </p>
+  <p class="info">同色ボールに爆発が触れると連鎖。連続タップで倍率UP。</p>
 
 <script>
+'use strict';
+
+// ============================================================
+// CONFIG
+// ============================================================
+const COLORS = [
+  { fill: '#ff6b6b', glow: 'rgba(255,80,80,', note: 261.63 },
+  { fill: '#feca57', glow: 'rgba(255,200,60,', note: 293.66 },
+  { fill: '#48dbfb', glow: 'rgba(70,200,255,', note: 329.63 },
+  { fill: '#1dd1a1', glow: 'rgba(30,220,160,', note: 392.00 },
+  { fill: '#ff9ff3', glow: 'rgba(255,160,250,', note: 440.00 },
+  { fill: '#a29bfe', glow: 'rgba(160,150,255,', note: 523.25 }
+];
+const RAINBOW_IDX = -1; // virtual color: matches all
+const BOMB_IDX = -2;
+
+const UPGRADES = [
+  { id: 'burst',   icon: '💥', name: '爆発拡大',   desc: '爆発範囲 +20%',         max: 5 },
+  { id: 'slow',    icon: '⏱',  name: '時間減速',   desc: 'ボール速度 -15%',       max: 4 },
+  { id: 'linger',  icon: '🔥', name: '連鎖延長',   desc: '爆発持続 +25%',         max: 3 },
+  { id: 'score',   icon: '✨', name: '得点倍率',   desc: 'スコア +25%',           max: 5 },
+  { id: 'magnet',  icon: '🧲', name: '連鎖磁石',   desc: '同色ボールが引き合う',  max: 3 },
+  { id: 'rainbow', icon: '🌈', name: '虹玉降臨',   desc: '虹玉 +5% 出現率',       max: 3 },
+  { id: 'bomb',    icon: '💣', name: '爆弾降臨',   desc: '爆弾玉 +4% 出現率',     max: 3 },
+  { id: 'streak',  icon: '⚡', name: '連続強化',   desc: '倍率窓 +1.5秒',          max: 3 },
+  { id: 'calm',    icon: '🌙', name: '湧き抑制',   desc: 'スポーン -15%',         max: 3 },
+  { id: 'auto',    icon: '🤖', name: 'オート発火', desc: '15秒毎に自動爆発',      max: 2 },
+];
+
+const CFG = {
+  baseSpawnInterval: 1.3,
+  igniteDur: 0.5,
+  baseIgniteRadius: 88,
+  baseBallRadius: 18,
+  maxBalls: 52,            // game over threshold
+  dangerThreshold: 42,     // danger UI starts
+  streakWindow: 3.0,
+  streakStep: 0.15,
+  streakCap: 5.0,
+  hitPauseSmall: 0.06,
+  hitPauseBig: 0.15,
+  autoPopInterval: 15,
+};
+
+// ============================================================
+// STATE
+// ============================================================
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-let W = 600, H = 500;
-let DPR = window.devicePixelRatio || 1;
+let W = 600, H = 500, DPR = 1;
 
+let balls = [];
+let particles = [];
+let shockwaves = [];
+let floaters = []; // floating combo numbers
+let stars = [];    // background stars
+
+let state = null;
+let meta = loadMeta();
+let lastTime = 0;
+let hitPause = 0;
+let screenShake = 0;
+let danger = false;
+let pendingUpgrade = false;
+let activeChainTime = 0; // for musical chains
+
+// ============================================================
+// META (persistent)
+// ============================================================
+function loadMeta() {
+  try {
+    const raw = localStorage.getItem('burstchain_meta');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { highScore: 0, maxChain: 0, maxLevel: 1, runs: 0, totalPops: 0, achievements: {} };
+}
+function saveMeta() {
+  try { localStorage.setItem('burstchain_meta', JSON.stringify(meta)); } catch (e) {}
+}
+
+// ============================================================
+// AUDIO
+// ============================================================
+let audioCtx = null;
+function ensureAudio() {
+  if (audioCtx) { if (audioCtx.state === 'suspended') audioCtx.resume(); return; }
+  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+}
+function playTone(freq, dur, type = 'sine', vol = 0.08) {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
+// Pentatonic note for chain step
+function chainNote(comboStep, colorIdx) {
+  if (!audioCtx) return;
+  const base = colorIdx >= 0 ? COLORS[colorIdx].note : 392.0;
+  // step up by semitones in pentatonic feel (every 2-3 semitones)
+  const semis = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];
+  const idx = Math.min(comboStep - 1, semis.length - 1);
+  const freq = base * Math.pow(2, semis[idx] / 12);
+  playTone(freq, 0.12, 'triangle', 0.07);
+  setTimeout(() => playTone(freq * 2, 0.06, 'sine', 0.04), 20);
+}
+function playTapHit() { playTone(420, 0.08, 'sine', 0.06); }
+function playFizzle() { playTone(180, 0.1, 'sawtooth', 0.04); }
+function playLevelUp() {
+  if (!audioCtx) return;
+  const notes = [392, 494, 587, 784];
+  notes.forEach((f, i) => setTimeout(() => playTone(f, 0.25, 'triangle', 0.08), i * 90));
+}
+function playAchievement() {
+  if (!audioCtx) return;
+  [659, 784, 988].forEach((f, i) => setTimeout(() => playTone(f, 0.18, 'sine', 0.07), i * 60));
+}
+
+// ============================================================
+// CANVAS
+// ============================================================
 function resizeCanvas() {
   const wrap = document.getElementById('canvas-wrap');
   const rect = wrap.getBoundingClientRect();
-  const availW = rect.width - 8;
-  const availH = rect.height - 8;
-  // pick logical size that fits screen, capped
-  W = Math.max(280, Math.min(availW, 600));
-  H = Math.max(380, Math.min(availH, 800));
+  W = Math.max(280, Math.min(rect.width - 8, 600));
+  H = Math.max(380, Math.min(rect.height - 8, 800));
   DPR = window.devicePixelRatio || 1;
   canvas.style.width = W + 'px';
   canvas.style.height = H + 'px';
   canvas.width = Math.floor(W * DPR);
   canvas.height = Math.floor(H * DPR);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-
-  // clamp existing balls inside new bounds
+  initStars();
   for (const b of balls) {
     if (b.x > W - b.radius) b.x = W - b.radius;
     if (b.y > H - b.radius) b.y = H - b.radius;
   }
 }
-
-const COLORS = [
-  { fill: '#ff6b6b', glow: 'rgba(255,80,80,', name: 'red' },
-  { fill: '#feca57', glow: 'rgba(255,200,60,', name: 'yellow' },
-  { fill: '#48dbfb', glow: 'rgba(70,200,255,', name: 'blue' },
-  { fill: '#1dd1a1', glow: 'rgba(30,220,160,', name: 'green' },
-  { fill: '#ff9ff3', glow: 'rgba(255,160,250,', name: 'pink' },
-  { fill: '#a29bfe', glow: 'rgba(160,150,255,', name: 'purple' }
-];
-
-let balls = [];
-let particles = [];
-let shockwaves = [];
-let score = 0;
-let maxCombo = 0;
-let currentCombo = 0;
-let timeLeft = 60;
-let gameState = 'start';
-let lastTime = 0;
-let comboTimer = 0;
-let screenShake = 0;
-
-let audioCtx = null;
-function ensureAudio() {
-  if (audioCtx) return;
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch (e) {}
+function initStars() {
+  stars = [];
+  const n = Math.floor(W * H / 8000);
+  for (let i = 0; i < n; i++) {
+    stars.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.4, p: Math.random() * Math.PI * 2 });
+  }
 }
-function playSound(freq, duration, type = 'sine', volume = 0.1) {
-  if (!audioCtx) return;
-  try {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-  } catch (e) {}
-}
-function playBurst(comboCount) {
-  const baseFreq = 300 + Math.min(comboCount, 12) * 80;
-  playSound(baseFreq, 0.15, 'square', 0.08);
-  setTimeout(() => playSound(baseFreq * 1.5, 0.1, 'sine', 0.06), 30);
+
+// ============================================================
+// ENTITIES
+// ============================================================
+function ballSize() {
+  return Math.min(W, H) < 500 ? 19 : 17;
 }
 
 class Ball {
   constructor(x, y, colorIdx) {
-    this.x = x;
-    this.y = y;
-    // larger balls on mobile for easier tapping
-    const isSmall = Math.min(W, H) < 500;
-    const base = isSmall ? 18 : 16;
-    this.radius = base + Math.random() * 6;
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 0.6 + Math.random() * 1.4;
-    this.vx = Math.cos(angle) * speed;
-    this.vy = Math.sin(angle) * speed;
+    this.x = x; this.y = y;
+    this.radius = ballSize() + Math.random() * 5;
+    const a = Math.random() * Math.PI * 2;
+    const sp = 0.5 + Math.random() * 1.3;
+    this.vx = Math.cos(a) * sp;
+    this.vy = Math.sin(a) * sp;
     this.colorIdx = colorIdx;
-    this.color = COLORS[colorIdx];
+    this.color = colorIdx >= 0 ? COLORS[colorIdx] : null;
     this.state = 'normal';
     this.igniteTime = 0;
-    this.maxIgniteRadius = isSmall ? 75 : 90;
     this.currentRadius = this.radius;
     this.pulsePhase = Math.random() * Math.PI * 2;
+  }
+
+  get maxIgniteRadius() {
+    let r = CFG.baseIgniteRadius * (1 + 0.20 * (state.upgrades.burst || 0));
+    if (this.colorIdx === BOMB_IDX) r *= 1.8;
+    return r;
+  }
+  get igniteDuration() {
+    return CFG.igniteDur * (1 + 0.25 * (state.upgrades.linger || 0));
   }
 
   update(dt) {
     this.pulsePhase += dt * 3;
     if (this.state === 'normal') {
-      this.x += this.vx;
-      this.y += this.vy;
-      if (this.x < this.radius) { this.x = this.radius; this.vx *= -1; }
-      if (this.x > W - this.radius) { this.x = W - this.radius; this.vx *= -1; }
-      if (this.y < this.radius) { this.y = this.radius; this.vy *= -1; }
-      if (this.y > H - this.radius) { this.y = H - this.radius; this.vy *= -1; }
+      const slow = Math.pow(0.85, state.upgrades.slow || 0);
+      const mag = (state.upgrades.magnet || 0) * 0.04;
+      this.x += this.vx * slow;
+      this.y += this.vy * slow;
 
+      // bounce
+      if (this.x < this.radius) { this.x = this.radius; this.vx = Math.abs(this.vx); }
+      if (this.x > W - this.radius) { this.x = W - this.radius; this.vx = -Math.abs(this.vx); }
+      if (this.y < this.radius) { this.y = this.radius; this.vy = Math.abs(this.vy); }
+      if (this.y > H - this.radius) { this.y = H - this.radius; this.vy = -Math.abs(this.vy); }
+
+      // ball-ball collision + magnet
       for (const o of balls) {
         if (o === this || o.state !== 'normal') continue;
         const dx = o.x - this.x, dy = o.y - this.y;
         const d = Math.sqrt(dx*dx + dy*dy);
+        if (d <= 0) continue;
         const min = this.radius + o.radius;
-        if (d < min && d > 0) {
+        if (d < min) {
           const overlap = (min - d) / 2;
           const nx = dx / d, ny = dy / d;
-          this.x -= nx * overlap;
-          this.y -= ny * overlap;
-          o.x += nx * overlap;
-          o.y += ny * overlap;
+          this.x -= nx * overlap; this.y -= ny * overlap;
+          o.x += nx * overlap; o.y += ny * overlap;
           const dvx = this.vx - o.vx, dvy = this.vy - o.vy;
           const dot = dvx * nx + dvy * ny;
           if (dot > 0) {
-            this.vx -= dot * nx;
-            this.vy -= dot * ny;
-            o.vx += dot * nx;
-            o.vy += dot * ny;
+            this.vx -= dot * nx; this.vy -= dot * ny;
+            o.vx += dot * nx; o.vy += dot * ny;
           }
+        } else if (mag > 0 && d < 200 && this.colorIdx === o.colorIdx && this.colorIdx >= 0) {
+          const f = mag / Math.max(40, d);
+          this.vx += (dx / d) * f;
+          this.vy += (dy / d) * f;
         }
       }
+      // velocity cap
+      const sp = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+      const cap = 3.5;
+      if (sp > cap) { this.vx = this.vx / sp * cap; this.vy = this.vy / sp * cap; }
     } else if (this.state === 'igniting') {
       this.igniteTime += dt;
-      const progress = Math.min(this.igniteTime / 0.5, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
+      const p = Math.min(this.igniteTime / this.igniteDuration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
       this.currentRadius = this.radius + (this.maxIgniteRadius - this.radius) * eased;
-      if (progress >= 1) this.burst();
+      if (p >= 1) this.burst();
     }
   }
 
   burst() {
     this.state = 'dead';
-    for (let i = 0; i < 22; i++) {
-      const angle = (Math.PI * 2 / 22) * i + Math.random() * 0.3;
-      const speed = 2 + Math.random() * 5;
-      particles.push(new Particle(this.x, this.y,
-        Math.cos(angle) * speed, Math.sin(angle) * speed,
-        this.color.fill));
+    state.totalPopsRun++;
+    meta.totalPops++;
+    const drawColor = this.colorIdx >= 0 ? this.color.fill : (this.colorIdx === BOMB_IDX ? '#fff' : '#feca57');
+    for (let i = 0; i < 24; i++) {
+      const angle = (Math.PI * 2 / 24) * i + Math.random() * 0.3;
+      const sp = 2 + Math.random() * 5;
+      particles.push(new Particle(this.x, this.y, Math.cos(angle) * sp, Math.sin(angle) * sp, drawColor));
     }
-    shockwaves.push(new Shockwave(this.x, this.y, this.color));
-    screenShake = Math.min(screenShake + 4, 15);
+    shockwaves.push(new Shockwave(this.x, this.y, this.colorIdx >= 0 ? this.color : { glow: 'rgba(255,255,255,' }));
   }
 
   draw() {
     if (this.state === 'normal') {
       const pulse = 1 + Math.sin(this.pulsePhase) * 0.06;
       const r = this.radius * pulse;
-      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 2.5);
-      grad.addColorStop(0, this.color.glow + '0.5)');
-      grad.addColorStop(0.5, this.color.glow + '0.2)');
-      grad.addColorStop(1, this.color.glow + '0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, r * 2.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = this.color.fill;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.beginPath();
-      ctx.arc(this.x - r/3, this.y - r/3, r/3.5, 0, Math.PI * 2);
-      ctx.fill();
+      if (this.colorIdx === RAINBOW_IDX) this.drawRainbow(r);
+      else if (this.colorIdx === BOMB_IDX) this.drawBomb(r);
+      else this.drawNormal(r);
     } else if (this.state === 'igniting') {
-      const progress = this.igniteTime / 0.5;
-      const alpha = 1 - progress * 0.7;
-      ctx.fillStyle = this.color.glow + (0.35 * alpha) + ')';
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = this.color.fill;
-      ctx.lineWidth = 4 * (1 - progress * 0.5);
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2);
-      ctx.stroke();
+      const p = this.igniteTime / this.igniteDuration;
+      const alpha = 1 - p * 0.6;
+      const glow = this.color ? this.color.glow : 'rgba(255,255,255,';
+      const fill = this.color ? this.color.fill : '#ffffff';
+      ctx.fillStyle = glow + (0.35 * alpha) + ')';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = fill;
+      ctx.lineWidth = 4 * (1 - p * 0.5);
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI*2); ctx.stroke();
       ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius * (1 - progress), 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * (1 - p), 0, Math.PI*2); ctx.fill();
     }
+  }
+
+  drawNormal(r) {
+    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 2.5);
+    grad.addColorStop(0, this.color.glow + '0.5)');
+    grad.addColorStop(0.5, this.color.glow + '0.2)');
+    grad.addColorStop(1, this.color.glow + '0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(this.x, this.y, r * 2.5, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = this.color.fill;
+    ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.arc(this.x - r/3, this.y - r/3, r/3.5, 0, Math.PI*2); ctx.fill();
+  }
+  drawRainbow(r) {
+    const time = performance.now() / 600;
+    const grad = ctx.createConicGradient ?
+      ctx.createConicGradient(time, this.x, this.y) :
+      ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
+    if (grad.addColorStop) {
+      grad.addColorStop(0, '#ff6b6b');
+      grad.addColorStop(0.16, '#feca57');
+      grad.addColorStop(0.33, '#1dd1a1');
+      grad.addColorStop(0.5, '#48dbfb');
+      grad.addColorStop(0.66, '#a29bfe');
+      grad.addColorStop(0.83, '#ff9ff3');
+      grad.addColorStop(1, '#ff6b6b');
+    }
+    // outer glow
+    const g2 = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 2.5);
+    g2.addColorStop(0, 'rgba(255,255,255,0.5)');
+    g2.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g2;
+    ctx.beginPath(); ctx.arc(this.x, this.y, r * 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath(); ctx.arc(this.x - r/3, this.y - r/3, r/3.5, 0, Math.PI*2); ctx.fill();
+  }
+  drawBomb(r) {
+    const pulse = 0.5 + 0.5 * Math.abs(Math.sin(this.pulsePhase * 2));
+    ctx.fillStyle = `rgba(255, ${80 + pulse * 80}, 80, 0.4)`;
+    ctx.beginPath(); ctx.arc(this.x, this.y, r * 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = `rgba(255, ${80 + pulse * 120}, 80, ${0.6 + pulse * 0.4})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI*2); ctx.stroke();
+    // fuse text
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${r}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('💣', this.x, this.y);
   }
 
   ignite() {
@@ -389,18 +565,12 @@ class Ball {
 
 class Particle {
   constructor(x, y, vx, vy, color) {
-    this.x = x; this.y = y;
-    this.vx = vx; this.vy = vy;
-    this.life = 1;
-    this.color = color;
-    this.size = 3 + Math.random() * 4;
+    this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+    this.life = 1; this.color = color; this.size = 3 + Math.random() * 4;
   }
   update(dt) {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vy += 0.15;
-    this.vx *= 0.97;
-    this.vy *= 0.97;
+    this.x += this.vx; this.y += this.vy;
+    this.vy += 0.15; this.vx *= 0.97; this.vy *= 0.97;
     this.life -= dt * 1.4;
   }
   draw() {
@@ -408,20 +578,15 @@ class Particle {
     const a = Math.max(0, this.life);
     ctx.globalAlpha = a;
     ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size * a, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.size * a, 0, Math.PI*2); ctx.fill();
     ctx.globalAlpha = 1;
   }
 }
 
 class Shockwave {
   constructor(x, y, color) {
-    this.x = x; this.y = y;
-    this.radius = 5;
-    this.maxRadius = 120;
-    this.life = 1;
-    this.color = color;
+    this.x = x; this.y = y; this.radius = 5; this.maxRadius = 120;
+    this.life = 1; this.color = color;
   }
   update(dt) {
     this.radius += (this.maxRadius - this.radius) * dt * 8;
@@ -431,52 +596,216 @@ class Shockwave {
     if (this.life <= 0) return;
     ctx.strokeStyle = this.color.glow + this.life + ')';
     ctx.lineWidth = 3 * this.life;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.stroke();
   }
 }
 
+class Floater {
+  constructor(x, y, text, color, size = 22) {
+    this.x = x; this.y = y; this.text = text; this.color = color;
+    this.life = 1; this.vy = -1.5; this.size = size;
+  }
+  update(dt) { this.y += this.vy; this.vy *= 0.96; this.life -= dt * 0.9; }
+  draw() {
+    if (this.life <= 0) return;
+    const a = Math.max(0, Math.min(1, this.life * 1.5));
+    ctx.globalAlpha = a;
+    ctx.font = `900 ${this.size}px 'Segoe UI', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.strokeText(this.text, this.x, this.y);
+    ctx.fillStyle = this.color;
+    ctx.fillText(this.text, this.x, this.y);
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ============================================================
+// SPAWNING
+// ============================================================
+function pickSpawnColor() {
+  const rainbowRate = (state.upgrades.rainbow || 0) * 0.05;
+  const bombRate = (state.upgrades.bomb || 0) * 0.04;
+  const r = Math.random();
+  if (r < rainbowRate) return RAINBOW_IDX;
+  if (r < rainbowRate + bombRate) return BOMB_IDX;
+  return Math.floor(Math.random() * COLORS.length);
+}
 function spawnBall(forceColor = null) {
   let tries = 0;
-  while (tries < 20) {
+  while (tries < 25) {
     const x = 40 + Math.random() * (W - 80);
     const y = 40 + Math.random() * (H - 80);
     let ok = true;
     for (const b of balls) {
       if (b.state !== 'normal') continue;
       const dx = b.x - x, dy = b.y - y;
-      if (dx*dx + dy*dy < (b.radius + 25) * (b.radius + 25)) { ok = false; break; }
+      if (dx*dx + dy*dy < (b.radius + 22) * (b.radius + 22)) { ok = false; break; }
     }
     if (ok) {
-      const colorIdx = forceColor !== null ? forceColor : Math.floor(Math.random() * COLORS.length);
-      balls.push(new Ball(x, y, colorIdx));
+      const c = forceColor !== null ? forceColor : pickSpawnColor();
+      balls.push(new Ball(x, y, c));
       return true;
     }
     tries++;
   }
   return false;
 }
-
-function targetBallCount() {
-  // scale with screen area
-  const area = W * H;
-  return Math.max(14, Math.min(30, Math.floor(area / 9000)));
+function currentSpawnInterval() {
+  const lvFactor = Math.pow(0.92, state.level - 1);  // faster each level
+  const calmFactor = Math.pow(1.18, state.upgrades.calm || 0); // slower with upgrade
+  return CFG.baseSpawnInterval * lvFactor * calmFactor;
 }
 
-function init() {
-  balls = [];
-  particles = [];
-  shockwaves = [];
-  score = 0;
-  maxCombo = 0;
-  currentCombo = 0;
-  timeLeft = 60;
-  gameState = 'playing';
-  comboTimer = 0;
-  const n = targetBallCount();
-  for (let i = 0; i < n; i++) spawnBall();
+// ============================================================
+// CORE GAME
+// ============================================================
+function newGame() {
+  meta.runs++;
+  saveMeta();
+  state = {
+    score: 0,
+    level: 1,
+    xp: 0,
+    currentCombo: 0,
+    maxComboRun: 0,
+    upgrades: {},
+    streak: 1.0,
+    streakTimer: 0,
+    comboTimer: 0,
+    runTime: 0,
+    spawnTimer: 0,
+    autoPopTimer: 0,
+    totalPopsRun: 0,
+    pendingChain: false,
+  };
+  balls = []; particles = []; shockwaves = []; floaters = [];
+  hitPause = 0; screenShake = 0; danger = false;
+  pendingUpgrade = false;
+  const initial = Math.floor(Math.min(W, H) < 500 ? 20 : 24);
+  for (let i = 0; i < initial; i++) spawnBall();
+  hide('start-screen'); hide('gameover-screen'); hide('levelup-screen');
   ensureAudio();
+}
+
+function xpForLevel(lv) { return Math.floor(80 * Math.pow(lv, 1.55)); }
+
+function gainScore(amount) {
+  const boost = 1 + 0.25 * (state.upgrades.score || 0);
+  const total = amount * state.streak * boost;
+  state.score += Math.floor(total);
+  state.xp += Math.floor(total);
+  while (state.xp >= xpForLevel(state.level)) {
+    state.xp -= xpForLevel(state.level);
+    levelUp();
+  }
+}
+
+function levelUp() {
+  state.level++;
+  meta.maxLevel = Math.max(meta.maxLevel, state.level);
+  saveMeta();
+  playLevelUp();
+  screenShake = Math.min(screenShake + 8, 18);
+  pendingUpgrade = true; // pause for choice
+  showUpgradeChoices();
+  checkAch('level5', state.level >= 5, 'LEVEL 5 到達！');
+  checkAch('level10', state.level >= 10, 'LEVEL 10 到達！');
+  checkAch('level20', state.level >= 20, '伝説のLEVEL 20！');
+}
+
+function pickUpgradeChoices() {
+  const pool = UPGRADES.filter(u => (state.upgrades[u.id] || 0) < u.max);
+  const choices = [];
+  const work = pool.slice();
+  while (choices.length < 3 && work.length > 0) {
+    const i = Math.floor(Math.random() * work.length);
+    choices.push(work.splice(i, 1)[0]);
+  }
+  while (choices.length < 3) {
+    // fallback: maxed upgrades give score bonus
+    choices.push({ id: 'bonus_score', icon: '💰', name: 'ボーナス', desc: '+500 スコア', max: 99, bonus: true });
+  }
+  return choices;
+}
+function showUpgradeChoices() {
+  const screen = document.getElementById('levelup-screen');
+  const title = document.getElementById('levelup-title');
+  title.textContent = `LEVEL ${state.level}!`;
+  const list = document.getElementById('upgrade-cards');
+  list.innerHTML = '';
+  const choices = pickUpgradeChoices();
+  for (const c of choices) {
+    const lvl = state.upgrades[c.id] || 0;
+    const isNew = lvl === 0 && !c.bonus;
+    const card = document.createElement('div');
+    card.className = 'upgrade-card' + (isNew ? ' new' : '');
+    const lvText = c.bonus ? '' : `<div class="lv">Lv ${lvl} → ${lvl + 1}</div>`;
+    card.innerHTML = `
+      <div class="icon">${c.icon}</div>
+      <div class="body">
+        <div class="name">${c.name}</div>
+        <div class="desc">${c.desc}</div>
+      </div>
+      ${lvText}
+    `;
+    card.addEventListener('click', () => chooseUpgrade(c));
+    list.appendChild(card);
+  }
+  screen.classList.add('show');
+}
+function chooseUpgrade(c) {
+  if (c.bonus) {
+    state.score += 500;
+  } else {
+    state.upgrades[c.id] = (state.upgrades[c.id] || 0) + 1;
+  }
+  hide('levelup-screen');
+  pendingUpgrade = false;
+  playTone(700, 0.15, 'sine', 0.08);
+}
+
+function igniteBall(ball, isChain) {
+  if (!ball.ignite()) return false;
+  if (isChain) {
+    state.currentCombo++;
+    activeChainTime = 0.4;
+    const base = 12 * state.currentCombo;
+    gainScore(base);
+    chainNote(state.currentCombo, ball.colorIdx);
+    floaters.push(new Floater(ball.x, ball.y - ball.radius, `+${Math.floor(base * state.streak)}`,
+      ball.colorIdx >= 0 ? ball.color.fill : '#fff',
+      18 + Math.min(20, state.currentCombo)));
+    if (state.currentCombo > state.maxComboRun) state.maxComboRun = state.currentCombo;
+    if (state.currentCombo > meta.maxChain) meta.maxChain = state.currentCombo;
+    // hit pause + shake escalate
+    if (state.currentCombo >= 5 && state.currentCombo % 5 === 0) {
+      hitPause = Math.max(hitPause, state.currentCombo >= 15 ? CFG.hitPauseBig : CFG.hitPauseSmall);
+      screenShake = Math.min(screenShake + state.currentCombo * 0.4, 22);
+    }
+    showComboPopup();
+    checkAch('chain5', state.currentCombo >= 5, '初の5連鎖！');
+    checkAch('chain10', state.currentCombo >= 10, '10連鎖達成！');
+    checkAch('chain20', state.currentCombo >= 20, '神連鎖！20連鎖！');
+    checkAch('chain50', state.currentCombo >= 50, '伝説の50連鎖！！');
+  } else {
+    // direct tap
+    bumpStreak();
+    state.currentCombo = 1;
+    gainScore(10);
+    playTapHit();
+  }
+  state.comboTimer = 1.2;
+  return true;
+}
+
+function bumpStreak() {
+  if (state.streakTimer > 0) {
+    const cap = CFG.streakCap + 0.5 * (state.upgrades.streak || 0);
+    state.streak = Math.min(state.streak + CFG.streakStep, cap);
+  }
+  state.streakTimer = CFG.streakWindow + 1.5 * (state.upgrades.streak || 0);
 }
 
 function checkChains() {
@@ -484,63 +813,234 @@ function checkChains() {
     if (ball.state !== 'igniting') continue;
     for (const other of balls) {
       if (other === ball || other.state !== 'normal') continue;
-      if (other.colorIdx !== ball.colorIdx) continue;
-      const dx = other.x - ball.x;
-      const dy = other.y - ball.y;
+      const sameColor = ball.colorIdx === other.colorIdx && ball.colorIdx >= 0;
+      const ballIsBomb = ball.colorIdx === BOMB_IDX;
+      const otherIsBomb = other.colorIdx === BOMB_IDX;
+      const ballIsRainbow = ball.colorIdx === RAINBOW_IDX;
+      const otherIsRainbow = other.colorIdx === RAINBOW_IDX;
+      // Bomb ignites all colors it touches. Rainbow matches anything.
+      const shouldChain = sameColor || ballIsBomb || ballIsRainbow || otherIsRainbow;
+      if (!shouldChain) continue;
+      const dx = other.x - ball.x, dy = other.y - ball.y;
       const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist < ball.currentRadius + other.radius * 0.7) {
-        other.ignite();
-        currentCombo++;
-        score += currentCombo * 15;
-        comboTimer = 1.5;
-        if (currentCombo > maxCombo) maxCombo = currentCombo;
-        playBurst(currentCombo);
-        showCombo();
+      if (dist < ball.currentRadius + other.radius * 0.75) {
+        igniteBall(other, true);
       }
     }
   }
 }
 
-function showCombo() {
-  if (currentCombo < 2) return;
+function showComboPopup() {
+  if (state.currentCombo < 3) return;
   const popup = document.getElementById('combo-popup');
-  popup.textContent = currentCombo + ' CHAIN!';
-  const colorIdx = Math.min(currentCombo - 2, COLORS.length - 1);
-  popup.style.color = COLORS[colorIdx % COLORS.length].fill;
+  let txt = `${state.currentCombo} CHAIN!`;
+  if (state.currentCombo >= 20) txt = `${state.currentCombo} CHAIN!! 🔥`;
+  if (state.currentCombo >= 30) txt = `${state.currentCombo} GOD CHAIN!`;
+  popup.textContent = txt;
+  const idx = Math.min(state.currentCombo - 3, COLORS.length - 1);
+  popup.style.color = COLORS[idx % COLORS.length].fill;
   popup.style.opacity = '1';
   popup.style.transform = 'translate(-50%, -50%) scale(1)';
   clearTimeout(popup._t);
   popup._t = setTimeout(() => {
     popup.style.opacity = '0';
     popup.style.transform = 'translate(-50%, -50%) scale(0.5)';
-  }, 700);
+  }, 600);
 }
 
-function handleClick(mx, my) {
-  if (gameState !== 'playing') return;
-  // generous tap target on mobile
+function handleTap(mx, my) {
+  if (pendingUpgrade) return;
+  if (!state || state.dead) return;
   const isSmall = Math.min(W, H) < 500;
-  const tapPad = isSmall ? 12 : 5;
+  const pad = isSmall ? 14 : 6;
   let best = null, bestDist = Infinity;
-  for (const ball of balls) {
-    if (ball.state !== 'normal') continue;
-    const dx = ball.x - mx;
-    const dy = ball.y - my;
+  for (const b of balls) {
+    if (b.state !== 'normal') continue;
+    const dx = b.x - mx, dy = b.y - my;
     const d = Math.sqrt(dx*dx + dy*dy);
-    if (d < ball.radius + tapPad && d < bestDist) {
-      best = ball;
-      bestDist = d;
-    }
+    if (d < b.radius + pad && d < bestDist) { best = b; bestDist = d; }
   }
   if (best) {
-    currentCombo = 1;
-    best.ignite();
-    score += 15;
-    comboTimer = 1.5;
-    playSound(400, 0.1, 'sine', 0.07);
+    igniteBall(best, false);
+  } else {
+    // missed tap → break streak
+    state.streak = Math.max(1, state.streak - 0.3);
+    floaters.push(new Floater(mx, my, 'MISS', '#777', 14));
+    playFizzle();
   }
 }
 
+function gameOver() {
+  state.dead = true;
+  meta.highScore = Math.max(meta.highScore, state.score);
+  saveMeta();
+  const dom = document.getElementById('result-display');
+  const newHi = state.score >= meta.highScore && state.score > 0;
+  dom.innerHTML = `
+    <div class="row"><span>SCORE</span><b>${state.score.toLocaleString()}</b></div>
+    <div class="row"><span>LEVEL</span><b>${state.level}</b></div>
+    <div class="row"><span>MAX CHAIN</span><b>${state.maxComboRun}</b></div>
+    <div class="row"><span>POPS</span><b>${state.totalPopsRun}</b></div>
+    <div class="row" style="border-top:1px solid #333;margin-top:6px;padding-top:6px;">
+      <span>ハイスコア</span><b style="${newHi ? 'color:#feca57' : ''}">${meta.highScore.toLocaleString()}${newHi ? ' 🏆 NEW!' : ''}</b></div>
+  `;
+  show('gameover-screen');
+}
+
+// ============================================================
+// ACHIEVEMENTS
+// ============================================================
+function checkAch(id, cond, label) {
+  if (!cond || meta.achievements[id]) return;
+  meta.achievements[id] = true;
+  saveMeta();
+  showAch(label);
+  playAchievement();
+}
+function showAch(text) {
+  const el = document.getElementById('achievement');
+  el.textContent = '🏆 ' + text;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+function loop(time) {
+  let dt = Math.min(0.05, (time - lastTime) / 1000);
+  lastTime = time;
+  if (hitPause > 0) { hitPause -= dt; dt = 0.001; }
+
+  if (state && !state.dead && !pendingUpgrade) {
+    state.runTime += dt;
+    state.spawnTimer -= dt;
+    state.autoPopTimer += dt;
+    state.streakTimer -= dt;
+    state.comboTimer -= dt;
+
+    if (state.streakTimer <= 0) state.streak = 1;
+    if (state.comboTimer <= 0 && state.currentCombo > 0) state.currentCombo = 0;
+
+    // Spawning
+    if (state.spawnTimer <= 0) {
+      const aliveNormal = balls.filter(b => b.state === 'normal').length;
+      if (aliveNormal < CFG.maxBalls) spawnBall();
+      state.spawnTimer = currentSpawnInterval() * (0.8 + Math.random() * 0.5);
+    }
+
+    // Auto pop upgrade
+    const autoLevel = state.upgrades.auto || 0;
+    if (autoLevel > 0) {
+      const interval = CFG.autoPopInterval / autoLevel;
+      if (state.autoPopTimer >= interval) {
+        state.autoPopTimer = 0;
+        const normals = balls.filter(b => b.state === 'normal');
+        if (normals.length > 0) {
+          const target = normals[Math.floor(Math.random() * normals.length)];
+          igniteBall(target, false);
+          floaters.push(new Floater(target.x, target.y, 'AUTO', '#1dd1a1', 16));
+        }
+      }
+    }
+
+    // Danger / Game over by overflow
+    const alive = balls.filter(b => b.state === 'normal').length;
+    danger = alive >= CFG.dangerThreshold;
+    if (alive >= CFG.maxBalls) gameOver();
+  }
+
+  // Update entities (run physics even on hit pause for tiny dt)
+  balls.forEach(b => b.update(dt));
+  balls = balls.filter(b => b.state !== 'dead');
+  particles.forEach(p => p.update(dt));
+  particles = particles.filter(p => p.life > 0);
+  shockwaves.forEach(s => s.update(dt));
+  shockwaves = shockwaves.filter(s => s.life > 0);
+  floaters.forEach(f => f.update(dt));
+  floaters = floaters.filter(f => f.life > 0);
+
+  if (state && !state.dead) checkChains();
+
+  render(dt);
+  updateHUD();
+  requestAnimationFrame(loop);
+}
+
+function render(dt) {
+  ctx.save();
+  if (screenShake > 0.1) {
+    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+    screenShake *= 0.86;
+  }
+  // motion-blur clear
+  ctx.fillStyle = danger ? 'rgba(40, 10, 10, 0.35)' : 'rgba(10, 10, 26, 0.35)';
+  ctx.fillRect(-20, -20, W + 40, H + 40);
+
+  // stars background
+  const t = performance.now() / 1000;
+  for (const s of stars) {
+    const a = 0.3 + 0.5 * Math.abs(Math.sin(s.p + t));
+    ctx.globalAlpha = a * 0.7;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  shockwaves.forEach(s => s.draw());
+  balls.forEach(b => b.draw());
+  particles.forEach(p => p.draw());
+  floaters.forEach(f => f.draw());
+
+  // danger frame
+  if (danger) {
+    const pulse = 0.4 + 0.6 * Math.abs(Math.sin(performance.now() / 200));
+    ctx.strokeStyle = `rgba(255, 80, 80, ${pulse})`;
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, W - 6, H - 6);
+  }
+  ctx.restore();
+
+  // UI sync
+  document.body.classList.toggle('danger', danger);
+  canvas.classList.toggle('danger', danger);
+}
+
+function updateHUD() {
+  if (!state) return;
+  document.getElementById('score').textContent = state.score.toLocaleString();
+  document.getElementById('level').textContent = state.level;
+  document.getElementById('mult').textContent = state.streak.toFixed(1);
+  document.getElementById('maxcombo').textContent = state.maxComboRun;
+  const need = xpForLevel(state.level);
+  document.getElementById('xp-bar').style.width = (state.xp / need * 100) + '%';
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function show(id) { document.getElementById(id).classList.add('show'); }
+function hide(id) { document.getElementById(id).classList.remove('show'); }
+
+function renderMetaDisplay() {
+  const dom = document.getElementById('meta-display');
+  if (meta.runs === 0) {
+    dom.innerHTML = `<div class="row" style="justify-content:center;color:#888">初プレイへようこそ！</div>`;
+    return;
+  }
+  dom.innerHTML = `
+    <div class="row"><span>ハイスコア</span><b>${meta.highScore.toLocaleString()}</b></div>
+    <div class="row"><span>最高連鎖</span><b>${meta.maxChain}</b></div>
+    <div class="row"><span>最高レベル</span><b>${meta.maxLevel}</b></div>
+    <div class="row"><span>累計プレイ</span><b>${meta.runs}</b></div>
+    <div class="row"><span>累計撃破</span><b>${meta.totalPops.toLocaleString()}</b></div>
+  `;
+}
+
+// ============================================================
+// INPUT
+// ============================================================
 function getCanvasPos(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
   return {
@@ -548,8 +1048,6 @@ function getCanvasPos(clientX, clientY) {
     y: (clientY - rect.top) * (H / rect.height)
   };
 }
-
-// Touch: respond immediately on touchstart, prevent click duplication
 let touchHandled = false;
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
@@ -558,103 +1056,33 @@ canvas.addEventListener('touchstart', (e) => {
   for (let i = 0; i < e.changedTouches.length; i++) {
     const t = e.changedTouches[i];
     const p = getCanvasPos(t.clientX, t.clientY);
-    handleClick(p.x, p.y);
+    handleTap(p.x, p.y);
   }
   setTimeout(() => { touchHandled = false; }, 400);
 }, { passive: false });
-
-canvas.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
-canvas.addEventListener('touchend', (e) => { e.preventDefault(); }, { passive: false });
-
+canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+canvas.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
 canvas.addEventListener('click', (e) => {
   if (touchHandled) return;
   ensureAudio();
   const p = getCanvasPos(e.clientX, e.clientY);
-  handleClick(p.x, p.y);
+  handleTap(p.x, p.y);
 });
 
-document.getElementById('start-btn').addEventListener('click', () => {
-  ensureAudio();
-  document.getElementById('start-screen').classList.add('hidden');
-  init();
-});
+document.getElementById('start-btn').addEventListener('click', () => { ensureAudio(); newGame(); });
+document.getElementById('restart-btn').addEventListener('click', () => { ensureAudio(); newGame(); });
 
-function endGame() {
-  gameState = 'ended';
-  const screen = document.getElementById('start-screen');
-  screen.innerHTML = `
-    <h2>GAME OVER</h2>
-    <p style="font-size:1.3em;color:#feca57">SCORE: <b>${score}</b></p>
-    <p>MAX CHAIN: <b style="color:#48dbfb">${maxCombo}</b></p>
-    <button class="btn" id="restart-btn">もう一回 / RETRY</button>
-  `;
-  screen.classList.remove('hidden');
-  document.getElementById('restart-btn').addEventListener('click', () => {
-    screen.classList.add('hidden');
-    init();
-  });
-}
-
-function gameLoop(time) {
-  const dt = Math.min(0.05, (time - lastTime) / 1000);
-  lastTime = time;
-
-  if (gameState === 'playing') {
-    timeLeft -= dt;
-    if (timeLeft <= 0) {
-      timeLeft = 0;
-      endGame();
-    }
-    comboTimer -= dt;
-    if (comboTimer <= 0 && currentCombo > 0) currentCombo = 0;
-
-    const aliveCount = balls.filter(b => b.state === 'normal').length;
-    const target = targetBallCount();
-    if (aliveCount < target - 3 && Math.random() < 0.08) spawnBall();
-    if (aliveCount < target - 8) spawnBall();
-  }
-
-  balls.forEach(b => b.update(dt));
-  balls = balls.filter(b => b.state !== 'dead');
-  particles.forEach(p => p.update(dt));
-  particles = particles.filter(p => p.life > 0);
-  shockwaves.forEach(s => s.update(dt));
-  shockwaves = shockwaves.filter(s => s.life > 0);
-
-  checkChains();
-
-  ctx.save();
-  if (screenShake > 0.1) {
-    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
-    screenShake *= 0.85;
-  }
-
-  ctx.fillStyle = 'rgba(10, 10, 26, 0.35)';
-  ctx.fillRect(-20, -20, W + 40, H + 40);
-
-  shockwaves.forEach(s => s.draw());
-  balls.forEach(b => b.draw());
-  particles.forEach(p => p.draw());
-
-  ctx.restore();
-
-  document.getElementById('score').textContent = score;
-  document.getElementById('maxcombo').textContent = maxCombo;
-  document.getElementById('time').textContent = Math.ceil(timeLeft);
-
-  requestAnimationFrame(gameLoop);
-}
-
-// init sizing & listeners
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 200));
-
-// prevent double-tap zoom
 document.addEventListener('gesturestart', (e) => e.preventDefault());
 document.addEventListener('dblclick', (e) => e.preventDefault());
 
-requestAnimationFrame(gameLoop);
+// ============================================================
+// BOOT
+// ============================================================
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 200));
+renderMetaDisplay();
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
