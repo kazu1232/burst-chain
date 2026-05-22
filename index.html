@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#050510">
+<title>BURST CHAIN - バーストチェイン</title>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+  body {
+    background: radial-gradient(ellipse at top, #1a1a3a, #050510);
+    color: white;
+    font-family: 'Segoe UI', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  #header {
+    width: 100%;
+    text-align: center;
+    padding: 8px 10px 4px;
+    flex-shrink: 0;
+  }
+  h1 {
+    margin: 0;
+    background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-size: clamp(1.4em, 5vw, 2.2em);
+    letter-spacing: 4px;
+    font-weight: 900;
+    filter: drop-shadow(0 0 20px rgba(100,150,255,0.3));
+  }
+  #stats {
+    display: flex;
+    gap: 6px;
+    margin: 6px auto;
+    font-size: clamp(0.7em, 2.5vw, 0.95em);
+    justify-content: center;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 600px;
+    padding: 0 8px;
+  }
+  .stat {
+    padding: 5px 10px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .stat span { font-weight: bold; color: #feca57; }
+  #canvas-wrap {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    min-height: 0;
+  }
+  #canvas {
+    display: block;
+    border-radius: 14px;
+    box-shadow: 0 0 40px rgba(100,100,255,0.25), inset 0 0 30px rgba(0,0,0,0.3);
+    background: radial-gradient(circle at center, #1a1a3a, #050510);
+    cursor: crosshair;
+    touch-action: none;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  #combo-popup {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    pointer-events: none;
+    font-size: clamp(2em, 8vw, 3.5em);
+    font-weight: 900;
+    text-shadow: 0 0 30px currentColor;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
+    opacity: 0;
+    white-space: nowrap;
+  }
+  .info {
+    width: 100%;
+    text-align: center;
+    color: #888;
+    font-size: clamp(0.7em, 2.2vw, 0.85em);
+    line-height: 1.5;
+    padding: 6px 10px 10px;
+    flex-shrink: 0;
+  }
+  #start-screen {
+    position: absolute;
+    inset: 4px;
+    background: rgba(10,10,30,0.9);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    backdrop-filter: blur(10px);
+    z-index: 10;
+    padding: 20px;
+  }
+  #start-screen h2 {
+    font-size: clamp(1.4em, 6vw, 2em);
+    margin: 0;
+    background: linear-gradient(135deg, #ff6b6b, #feca57);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-align: center;
+  }
+  #start-screen p {
+    max-width: 90%;
+    text-align: center;
+    line-height: 1.6;
+    color: #ccc;
+    margin: 0;
+    font-size: clamp(0.85em, 3.2vw, 1em);
+  }
+  .btn {
+    padding: 14px 36px;
+    background: linear-gradient(135deg, #ff6b6b, #feca57);
+    border: none;
+    border-radius: 30px;
+    color: white;
+    font-size: clamp(1em, 3.5vw, 1.2em);
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 8px 30px rgba(255,107,107,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 2px;
+    touch-action: manipulation;
+  }
+  .btn:active { transform: scale(0.95); box-shadow: 0 4px 15px rgba(255,107,107,0.4); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div id="header">
+    <h1>BURST CHAIN</h1>
+    <div id="stats">
+      <div class="stat">SCORE<br><span id="score">0</span></div>
+      <div class="stat">MAX CHAIN<br><span id="maxcombo">0</span></div>
+      <div class="stat">TIME<br><span id="time">60</span></div>
+    </div>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="canvas"></canvas>
+    <div id="combo-popup"></div>
+    <div id="start-screen">
+      <h2>バーストチェイン</h2>
+      <p>同じ色のボールをタップして<br><b style="color:#feca57">連鎖爆発</b>を起こせ！<br><br>長い連鎖ほど高得点。<br>60秒でハイスコアを狙え！</p>
+      <button class="btn" id="start-btn">START</button>
+    </div>
+  </div>
+  <p class="info">
+    同色ボールに爆発が触れると連鎖します。<br>
+    Tap balls to chain same-color explosions!
+  </p>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W = 600, H = 500;
+let DPR = window.devicePixelRatio || 1;
+
+function resizeCanvas() {
+  const wrap = document.getElementById('canvas-wrap');
+  const rect = wrap.getBoundingClientRect();
+  const availW = rect.width - 8;
+  const availH = rect.height - 8;
+  // pick logical size that fits screen, capped
+  W = Math.max(280, Math.min(availW, 600));
+  H = Math.max(380, Math.min(availH, 800));
+  DPR = window.devicePixelRatio || 1;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  canvas.width = Math.floor(W * DPR);
+  canvas.height = Math.floor(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  // clamp existing balls inside new bounds
+  for (const b of balls) {
+    if (b.x > W - b.radius) b.x = W - b.radius;
+    if (b.y > H - b.radius) b.y = H - b.radius;
+  }
+}
+
+const COLORS = [
+  { fill: '#ff6b6b', glow: 'rgba(255,80,80,', name: 'red' },
+  { fill: '#feca57', glow: 'rgba(255,200,60,', name: 'yellow' },
+  { fill: '#48dbfb', glow: 'rgba(70,200,255,', name: 'blue' },
+  { fill: '#1dd1a1', glow: 'rgba(30,220,160,', name: 'green' },
+  { fill: '#ff9ff3', glow: 'rgba(255,160,250,', name: 'pink' },
+  { fill: '#a29bfe', glow: 'rgba(160,150,255,', name: 'purple' }
+];
+
+let balls = [];
+let particles = [];
+let shockwaves = [];
+let score = 0;
+let maxCombo = 0;
+let currentCombo = 0;
+let timeLeft = 60;
+let gameState = 'start';
+let lastTime = 0;
+let comboTimer = 0;
+let screenShake = 0;
+
+let audioCtx = null;
+function ensureAudio() {
+  if (audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (e) {}
+}
+function playSound(freq, duration, type = 'sine', volume = 0.1) {
+  if (!audioCtx) return;
+  try {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) {}
+}
+function playBurst(comboCount) {
+  const baseFreq = 300 + Math.min(comboCount, 12) * 80;
+  playSound(baseFreq, 0.15, 'square', 0.08);
+  setTimeout(() => playSound(baseFreq * 1.5, 0.1, 'sine', 0.06), 30);
+}
+
+class Ball {
+  constructor(x, y, colorIdx) {
+    this.x = x;
+    this.y = y;
+    // larger balls on mobile for easier tapping
+    const isSmall = Math.min(W, H) < 500;
+    const base = isSmall ? 18 : 16;
+    this.radius = base + Math.random() * 6;
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 0.6 + Math.random() * 1.4;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.colorIdx = colorIdx;
+    this.color = COLORS[colorIdx];
+    this.state = 'normal';
+    this.igniteTime = 0;
+    this.maxIgniteRadius = isSmall ? 75 : 90;
+    this.currentRadius = this.radius;
+    this.pulsePhase = Math.random() * Math.PI * 2;
+  }
+
+  update(dt) {
+    this.pulsePhase += dt * 3;
+    if (this.state === 'normal') {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.x < this.radius) { this.x = this.radius; this.vx *= -1; }
+      if (this.x > W - this.radius) { this.x = W - this.radius; this.vx *= -1; }
+      if (this.y < this.radius) { this.y = this.radius; this.vy *= -1; }
+      if (this.y > H - this.radius) { this.y = H - this.radius; this.vy *= -1; }
+
+      for (const o of balls) {
+        if (o === this || o.state !== 'normal') continue;
+        const dx = o.x - this.x, dy = o.y - this.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        const min = this.radius + o.radius;
+        if (d < min && d > 0) {
+          const overlap = (min - d) / 2;
+          const nx = dx / d, ny = dy / d;
+          this.x -= nx * overlap;
+          this.y -= ny * overlap;
+          o.x += nx * overlap;
+          o.y += ny * overlap;
+          const dvx = this.vx - o.vx, dvy = this.vy - o.vy;
+          const dot = dvx * nx + dvy * ny;
+          if (dot > 0) {
+            this.vx -= dot * nx;
+            this.vy -= dot * ny;
+            o.vx += dot * nx;
+            o.vy += dot * ny;
+          }
+        }
+      }
+    } else if (this.state === 'igniting') {
+      this.igniteTime += dt;
+      const progress = Math.min(this.igniteTime / 0.5, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      this.currentRadius = this.radius + (this.maxIgniteRadius - this.radius) * eased;
+      if (progress >= 1) this.burst();
+    }
+  }
+
+  burst() {
+    this.state = 'dead';
+    for (let i = 0; i < 22; i++) {
+      const angle = (Math.PI * 2 / 22) * i + Math.random() * 0.3;
+      const speed = 2 + Math.random() * 5;
+      particles.push(new Particle(this.x, this.y,
+        Math.cos(angle) * speed, Math.sin(angle) * speed,
+        this.color.fill));
+    }
+    shockwaves.push(new Shockwave(this.x, this.y, this.color));
+    screenShake = Math.min(screenShake + 4, 15);
+  }
+
+  draw() {
+    if (this.state === 'normal') {
+      const pulse = 1 + Math.sin(this.pulsePhase) * 0.06;
+      const r = this.radius * pulse;
+      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 2.5);
+      grad.addColorStop(0, this.color.glow + '0.5)');
+      grad.addColorStop(0.5, this.color.glow + '0.2)');
+      grad.addColorStop(1, this.color.glow + '0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = this.color.fill;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath();
+      ctx.arc(this.x - r/3, this.y - r/3, r/3.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (this.state === 'igniting') {
+      const progress = this.igniteTime / 0.5;
+      const alpha = 1 - progress * 0.7;
+      ctx.fillStyle = this.color.glow + (0.35 * alpha) + ')';
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = this.color.fill;
+      ctx.lineWidth = 4 * (1 - progress * 0.5);
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius * (1 - progress), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  ignite() {
+    if (this.state === 'normal') {
+      this.state = 'igniting';
+      this.igniteTime = 0;
+      this.currentRadius = this.radius;
+      return true;
+    }
+    return false;
+  }
+}
+
+class Particle {
+  constructor(x, y, vx, vy, color) {
+    this.x = x; this.y = y;
+    this.vx = vx; this.vy = vy;
+    this.life = 1;
+    this.color = color;
+    this.size = 3 + Math.random() * 4;
+  }
+  update(dt) {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += 0.15;
+    this.vx *= 0.97;
+    this.vy *= 0.97;
+    this.life -= dt * 1.4;
+  }
+  draw() {
+    if (this.life <= 0) return;
+    const a = Math.max(0, this.life);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * a, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+class Shockwave {
+  constructor(x, y, color) {
+    this.x = x; this.y = y;
+    this.radius = 5;
+    this.maxRadius = 120;
+    this.life = 1;
+    this.color = color;
+  }
+  update(dt) {
+    this.radius += (this.maxRadius - this.radius) * dt * 8;
+    this.life -= dt * 2.5;
+  }
+  draw() {
+    if (this.life <= 0) return;
+    ctx.strokeStyle = this.color.glow + this.life + ')';
+    ctx.lineWidth = 3 * this.life;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function spawnBall(forceColor = null) {
+  let tries = 0;
+  while (tries < 20) {
+    const x = 40 + Math.random() * (W - 80);
+    const y = 40 + Math.random() * (H - 80);
+    let ok = true;
+    for (const b of balls) {
+      if (b.state !== 'normal') continue;
+      const dx = b.x - x, dy = b.y - y;
+      if (dx*dx + dy*dy < (b.radius + 25) * (b.radius + 25)) { ok = false; break; }
+    }
+    if (ok) {
+      const colorIdx = forceColor !== null ? forceColor : Math.floor(Math.random() * COLORS.length);
+      balls.push(new Ball(x, y, colorIdx));
+      return true;
+    }
+    tries++;
+  }
+  return false;
+}
+
+function targetBallCount() {
+  // scale with screen area
+  const area = W * H;
+  return Math.max(14, Math.min(30, Math.floor(area / 9000)));
+}
+
+function init() {
+  balls = [];
+  particles = [];
+  shockwaves = [];
+  score = 0;
+  maxCombo = 0;
+  currentCombo = 0;
+  timeLeft = 60;
+  gameState = 'playing';
+  comboTimer = 0;
+  const n = targetBallCount();
+  for (let i = 0; i < n; i++) spawnBall();
+  ensureAudio();
+}
+
+function checkChains() {
+  for (const ball of balls) {
+    if (ball.state !== 'igniting') continue;
+    for (const other of balls) {
+      if (other === ball || other.state !== 'normal') continue;
+      if (other.colorIdx !== ball.colorIdx) continue;
+      const dx = other.x - ball.x;
+      const dy = other.y - ball.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < ball.currentRadius + other.radius * 0.7) {
+        other.ignite();
+        currentCombo++;
+        score += currentCombo * 15;
+        comboTimer = 1.5;
+        if (currentCombo > maxCombo) maxCombo = currentCombo;
+        playBurst(currentCombo);
+        showCombo();
+      }
+    }
+  }
+}
+
+function showCombo() {
+  if (currentCombo < 2) return;
+  const popup = document.getElementById('combo-popup');
+  popup.textContent = currentCombo + ' CHAIN!';
+  const colorIdx = Math.min(currentCombo - 2, COLORS.length - 1);
+  popup.style.color = COLORS[colorIdx % COLORS.length].fill;
+  popup.style.opacity = '1';
+  popup.style.transform = 'translate(-50%, -50%) scale(1)';
+  clearTimeout(popup._t);
+  popup._t = setTimeout(() => {
+    popup.style.opacity = '0';
+    popup.style.transform = 'translate(-50%, -50%) scale(0.5)';
+  }, 700);
+}
+
+function handleClick(mx, my) {
+  if (gameState !== 'playing') return;
+  // generous tap target on mobile
+  const isSmall = Math.min(W, H) < 500;
+  const tapPad = isSmall ? 12 : 5;
+  let best = null, bestDist = Infinity;
+  for (const ball of balls) {
+    if (ball.state !== 'normal') continue;
+    const dx = ball.x - mx;
+    const dy = ball.y - my;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d < ball.radius + tapPad && d < bestDist) {
+      best = ball;
+      bestDist = d;
+    }
+  }
+  if (best) {
+    currentCombo = 1;
+    best.ignite();
+    score += 15;
+    comboTimer = 1.5;
+    playSound(400, 0.1, 'sine', 0.07);
+  }
+}
+
+function getCanvasPos(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (clientX - rect.left) * (W / rect.width),
+    y: (clientY - rect.top) * (H / rect.height)
+  };
+}
+
+// Touch: respond immediately on touchstart, prevent click duplication
+let touchHandled = false;
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  ensureAudio();
+  touchHandled = true;
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const t = e.changedTouches[i];
+    const p = getCanvasPos(t.clientX, t.clientY);
+    handleClick(p.x, p.y);
+  }
+  setTimeout(() => { touchHandled = false; }, 400);
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+canvas.addEventListener('touchend', (e) => { e.preventDefault(); }, { passive: false });
+
+canvas.addEventListener('click', (e) => {
+  if (touchHandled) return;
+  ensureAudio();
+  const p = getCanvasPos(e.clientX, e.clientY);
+  handleClick(p.x, p.y);
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  ensureAudio();
+  document.getElementById('start-screen').classList.add('hidden');
+  init();
+});
+
+function endGame() {
+  gameState = 'ended';
+  const screen = document.getElementById('start-screen');
+  screen.innerHTML = `
+    <h2>GAME OVER</h2>
+    <p style="font-size:1.3em;color:#feca57">SCORE: <b>${score}</b></p>
+    <p>MAX CHAIN: <b style="color:#48dbfb">${maxCombo}</b></p>
+    <button class="btn" id="restart-btn">もう一回 / RETRY</button>
+  `;
+  screen.classList.remove('hidden');
+  document.getElementById('restart-btn').addEventListener('click', () => {
+    screen.classList.add('hidden');
+    init();
+  });
+}
+
+function gameLoop(time) {
+  const dt = Math.min(0.05, (time - lastTime) / 1000);
+  lastTime = time;
+
+  if (gameState === 'playing') {
+    timeLeft -= dt;
+    if (timeLeft <= 0) {
+      timeLeft = 0;
+      endGame();
+    }
+    comboTimer -= dt;
+    if (comboTimer <= 0 && currentCombo > 0) currentCombo = 0;
+
+    const aliveCount = balls.filter(b => b.state === 'normal').length;
+    const target = targetBallCount();
+    if (aliveCount < target - 3 && Math.random() < 0.08) spawnBall();
+    if (aliveCount < target - 8) spawnBall();
+  }
+
+  balls.forEach(b => b.update(dt));
+  balls = balls.filter(b => b.state !== 'dead');
+  particles.forEach(p => p.update(dt));
+  particles = particles.filter(p => p.life > 0);
+  shockwaves.forEach(s => s.update(dt));
+  shockwaves = shockwaves.filter(s => s.life > 0);
+
+  checkChains();
+
+  ctx.save();
+  if (screenShake > 0.1) {
+    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+    screenShake *= 0.85;
+  }
+
+  ctx.fillStyle = 'rgba(10, 10, 26, 0.35)';
+  ctx.fillRect(-20, -20, W + 40, H + 40);
+
+  shockwaves.forEach(s => s.draw());
+  balls.forEach(b => b.draw());
+  particles.forEach(p => p.draw());
+
+  ctx.restore();
+
+  document.getElementById('score').textContent = score;
+  document.getElementById('maxcombo').textContent = maxCombo;
+  document.getElementById('time').textContent = Math.ceil(timeLeft);
+
+  requestAnimationFrame(gameLoop);
+}
+
+// init sizing & listeners
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 200));
+
+// prevent double-tap zoom
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('dblclick', (e) => e.preventDefault());
+
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
